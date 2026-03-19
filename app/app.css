@@ -1,16 +1,37 @@
-@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Varela+Round&display=swap");
 
-@theme {
-  --font-sans:
-    "Comic Neue", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+:root {
+  --bg-rice: #f8f3e6;
+  --nori-dark: #1e293b;
+  --salmon-pink: #ff8c7a;
+  --tamago-yellow: #ffd93d;
+  --wasabi-green: #6bcb77;
+  --card-bg: #ffffff;
+  --border-color: #2c3e50;
+  --pink: #f65eb5;
+
+  --font-logo: "Fredoka", sans-serif;
+  --font-body: "Varela Round", sans-serif;
+  --border-width: 4px;
+  --radius: 20px;
+  --radius: 50%;
+  --shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+* {
+  box-sizing: border-box;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: light;
-  }
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-rice);
+  color: var(--nori-dark);
+  font-family: var(--font-body);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
 }
