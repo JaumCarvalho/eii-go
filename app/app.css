@@ -9,12 +9,11 @@
   --card-bg: #ffffff;
   --border-color: #2c3e50;
   --pink: #f65eb5;
-
   --font-logo: "Fredoka", sans-serif;
   --font-body: "Varela Round", sans-serif;
   --border-width: 4px;
   --radius: 20px;
-  --radius: 50%;
+  --radius-circle: 50%;
   --shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
@@ -32,6 +31,40 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
   position: relative;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+  width: 90%;
+  max-width: 420px;
+}
+
+.logo-container {
+  background-color: var(--tamago-yellow);
+  padding: 15px 60px;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: 4px 6px 0 var(--border-color);
+  transition: transform 0.2s ease;
+}
+
+.logo-container:hover {
+  transform: translateY(-3px) rotate(-1deg);
+}
+
+.logo-text {
+  font-family: var(--font-logo);
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--nori-dark);
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.logo-highlight {
+  color: var(--salmon-pink);
 }
