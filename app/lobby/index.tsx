@@ -10,6 +10,7 @@ type Player = {
   avatar_url: string;
   is_host: boolean;
   is_ready: boolean;
+  created_at: string;
 };
 
 export function Lobby() {
@@ -24,14 +25,12 @@ export function Lobby() {
   const joinLock = useRef(false);
 
   const isBrowser = typeof window !== "undefined";
-  const isHost = isBrowser
-    ? localStorage.getItem("eiigo_is_host") === "true"
-    : false;
-  const initialPlayerId = isBrowser
-    ? localStorage.getItem("eiigo_player_id")
-    : null;
-
-  const myPlayerIdRef = useRef<string | null>(initialPlayerId);
+  const [isHost, setIsHost] = useState(
+    isBrowser ? localStorage.getItem("eiigo_is_host") === "true" : false,
+  );
+  const myPlayerIdRef = useRef<string | null>(
+    isBrowser ? localStorage.getItem("eiigo_player_id") : null,
+  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -57,7 +56,7 @@ export function Lobby() {
         },
         (payload) => {
           if (payload.new.status === "playing") {
-            navigate(`/tabuleiro/${roomId}`);
+            navigate(`/board/${roomId}`);
           }
         },
       )
@@ -90,6 +89,10 @@ export function Lobby() {
               p.id === payload.new.id ? (payload.new as Player) : p,
             ),
           );
+          if (payload.new.id === myPlayerIdRef.current && payload.new.is_host) {
+            setIsHost(true);
+            localStorage.setItem("eiigo_is_host", "true");
+          }
         },
       )
       .on(
@@ -101,9 +104,31 @@ export function Lobby() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
-          setPlayers((current) =>
-            current.filter((p) => p.id !== payload.old.id),
-          );
+          setPlayers((current) => {
+            const sobreviventes = current.filter(
+              (p) => p.id !== payload.old.id,
+            );
+            const jogadorDeletado = current.find(
+              (p) => p.id === payload.old.id,
+            );
+
+            if (jogadorDeletado?.is_host && sobreviventes.length > 0) {
+              const maisAntigo = [...sobreviventes].sort(
+                (a, b) =>
+                  new Date(a.created_at).getTime() -
+                  new Date(b.created_at).getTime(),
+              )[0];
+
+              if (maisAntigo.id === myPlayerIdRef.current) {
+                supabase
+                  .from("players")
+                  .update({ is_host: true })
+                  .eq("id", maisAntigo.id)
+                  .then();
+              }
+            }
+            return sobreviventes;
+          });
         },
       )
       .subscribe();
@@ -120,11 +145,12 @@ export function Lobby() {
           .select("id")
           .eq("id", validPlayerId)
           .maybeSingle();
-
         if (!playerExists) {
           validPlayerId = null;
           myPlayerIdRef.current = null;
           localStorage.removeItem("eiigo_player_id");
+          localStorage.removeItem("eiigo_is_host");
+          setIsHost(false);
         }
       }
 
@@ -154,7 +180,6 @@ export function Lobby() {
         .select("*")
         .eq("room_id", roomId)
         .order("created_at", { ascending: true });
-
       if (allPlayers) setPlayers(allPlayers);
     };
 
@@ -175,7 +200,7 @@ export function Lobby() {
       supabase.removeChannel(channel);
       window.removeEventListener("beforeunload", handleUnload);
     };
-  }, [roomId, isHost, navigate, isBrowser]);
+  }, [roomId, navigate, isBrowser, isHost]);
 
   useEffect(() => {
     if (!isBrowser) return;
@@ -208,15 +233,73 @@ export function Lobby() {
       .eq("id", me.id);
   };
 
+  const generateId = () => Math.random().toString(36).substring(2, 15);
+
+  const createShuffledDeck = () => {
+    const deck: { id: string; type: string }[] = [];
+
+    const addCards = (type: string, quantity: number) => {
+      for (let i = 0; i < quantity; i++) {
+        deck.push({ id: generateId(), type });
+      }
+    };
+
+    addCards("tempura", 14);
+    addCards("sashimi", 14);
+    addCards("dumpling", 14);
+    addCards("maki_2", 12);
+    addCards("maki_3", 8);
+    addCards("maki_1", 6);
+    addCards("salmon_nigiri", 10);
+    addCards("squid_nigiri", 5);
+    addCards("egg_nigiri", 5);
+    addCards("pudding", 10);
+    addCards("wasabi", 6);
+    addCards("chopsticks", 4);
+
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    return deck;
+  };
+
   const handleStartGame = async () => {
-    await supabase.from("rooms").update({ status: "playing" }).eq("id", roomId);
+    const deck = createShuffledDeck();
+
+    const cardsPerPlayer = { 2: 10, 3: 9, 4: 8, 5: 7 }[players.length] || 7;
+
+    for (const player of players) {
+      const playerHand = deck.splice(0, cardsPerPlayer);
+
+      await supabase
+        .from("players")
+        .update({
+          cards_left: cardsPerPlayer,
+          has_picked: false,
+          hand: playerHand,
+          played_cards: [],
+          chosen_card: null,
+        })
+        .eq("id", player.id);
+    }
+
+    await supabase
+      .from("rooms")
+      .update({
+        status: "playing",
+        round: 1,
+        deck: deck,
+      })
+      .eq("id", roomId);
   };
 
   const handleVoltar = async () => {
-    if (myPlayerIdRef.current) {
+    if (myPlayerIdRef.current)
       await supabase.from("players").delete().eq("id", myPlayerIdRef.current);
-    }
     localStorage.removeItem("eiigo_player_id");
+    localStorage.removeItem("eiigo_is_host");
     navigate("/");
   };
 
@@ -229,8 +312,7 @@ export function Lobby() {
   return (
     <>
       <button className="btn-back" onClick={handleVoltar}>
-        <ArrowLeft />
-        SAIR
+        <ArrowLeft /> SAIR
       </button>
 
       <main className="main-container lobby-container">
@@ -241,7 +323,6 @@ export function Lobby() {
                 JOGADORES: {players.length}/{maxPlayers}
               </h2>
             </div>
-
             {isHost && (
               <button
                 className="btn-invite"
@@ -265,7 +346,6 @@ export function Lobby() {
               </button>
             )}
           </header>
-
           <div className="player-list">
             {players.map((player) => (
               <div
@@ -277,7 +357,7 @@ export function Lobby() {
                   <img src={player.avatar_url} alt="Avatar" />
                 </div>
                 <p className="player-name" style={{ flexGrow: 1 }}>
-                  {player.nickname}
+                  {player.nickname}{" "}
                   {player.id === myPlayerIdRef.current && " (Você)"}
                 </p>
                 <span
@@ -295,12 +375,6 @@ export function Lobby() {
                 </span>
               </div>
             ))}
-
-            {players.length === 0 && (
-              <p style={{ textAlign: "center", opacity: 0.5 }}>
-                A carregar jogadores...
-              </p>
-            )}
           </div>
         </section>
 
@@ -314,8 +388,7 @@ export function Lobby() {
                 !todosProntos || players.length === 1 ? "#ccc" : "",
             }}
           >
-            <Play />
-            INICIAR PARTIDA
+            <Play /> INICIAR PARTIDA
           </button>
         ) : (
           <button
@@ -326,8 +399,7 @@ export function Lobby() {
               color: "#1e293b",
             }}
           >
-            <Check />
-            {myReadyState ? "ESTOU PRONTO" : "CLIQUE SE ESTIVER PRONTO"}
+            <Check /> {myReadyState ? "ESTOU PRONTO" : "PRONTO?"}
           </button>
         )}
       </main>
