@@ -1,5 +1,5 @@
-import { Play, RefreshCw, LogIn } from "lucide-react"; // Adicionei o ícone LogIn
-import { useState } from "react";
+import { Play, RefreshCw, LogIn } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { supabase } from "~/lib/supabase";
 
@@ -10,6 +10,11 @@ export function CreateGame() {
 
   const [nickname, setNickname] = useState("");
   const [seed, setSeed] = useState("Felix");
+
+  useEffect(() => {
+    localStorage.removeItem("eiigo_player_id");
+    localStorage.removeItem("eiigo_is_host");
+  }, []);
 
   const gerarSeedAleatoria = () => Math.random().toString(36).substring(2, 10);
 
@@ -26,8 +31,10 @@ export function CreateGame() {
     localStorage.setItem("eiigo_avatar", avatarUrl);
 
     if (inviteRoomId) {
+      localStorage.setItem("eiigo_is_host", "false");
       navigate(`/lobby/${inviteRoomId}`);
     } else {
+      localStorage.setItem("eiigo_is_host", "true");
       const { data: room, error } = await supabase
         .from("rooms")
         .insert([{ status: "waiting" }])
