@@ -16,11 +16,11 @@ export function CreateGame() {
     localStorage.removeItem("eiigo_is_host");
   }, []);
 
-  const gerarSeedAleatoria = () => Math.random().toString(36).substring(2, 10);
+  const randomSeedGenerator = () => Math.random().toString(36).substring(2, 10);
 
   const handleRefreshAvatar = (e: React.MouseEvent) => {
     e.preventDefault();
-    setSeed(gerarSeedAleatoria());
+    setSeed(randomSeedGenerator());
   };
 
   const handleAction = async () => {
