@@ -21,7 +21,7 @@ export function Results() {
     setIsMounted(true);
     if (typeof window === "undefined" || !roomId) return;
 
-    const carregarPodio = async () => {
+    const loadRanking = async () => {
       const { data: jogadoresDB } = await supabase
         .from("players")
         .select("id, nickname, avatar_url, score, puddings")
@@ -67,7 +67,7 @@ export function Results() {
       }
     };
 
-    carregarPodio();
+    loadRanking();
   }, [roomId]);
 
   const handlePlayAgain = async () => {
@@ -123,7 +123,8 @@ export function Results() {
                   </div>
                   <p className="ranking-name">
                     {player.nome}{" "}
-                    {player.id === localStorage.getItem("eiigo_player_id")}
+                    {player.id === localStorage.getItem("eiigo_player_id") &&
+                      "(Você)"}
                   </p>
                   <div className="ranking-score">{player.score} pts</div>
                 </div>
