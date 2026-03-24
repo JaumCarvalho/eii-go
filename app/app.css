@@ -487,6 +487,18 @@ body {
   top: 50%;
   transform: translateY(-50%);
 }
+.spot-top-left {
+  top: 20px;
+  flex-direction: column-reverse;
+  left: 30%;
+  transform: translateX(-50%);
+}
+.spot-top-right {
+  top: 20px;
+  flex-direction: column-reverse;
+  left: 70%;
+  transform: translateX(-50%);
+}
 
 .player-info {
   display: flex;
