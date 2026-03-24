@@ -46,13 +46,15 @@ export function useGame(roomId: string) {
   }, [isBrowser]);
 
   const opponents = players.filter((j) => j.id !== myId);
-  const occupiedSeats = [
-    { position: "left", id: "player-left" },
-    { position: "top", id: "player-top" },
-    { position: "right", id: "player-right" },
-  ]
-    .map((slot, index) =>
-      index < opponents.length ? { ...slot, player: opponents[index] } : null,
+  const seatPositions =
+    opponents.length >= 4
+      ? ["left", "top-left", "top-right", "right"]
+      : ["left", "top", "right"];
+  const occupiedSeats = seatPositions
+    .map((position, index) =>
+      index < opponents.length
+        ? { position, id: `player-${position}`, player: opponents[index] }
+        : null,
     )
     .filter(Boolean) as OccupiedSeat[];
 
@@ -122,7 +124,8 @@ export function useGame(roomId: string) {
         .select(
           "id, has_picked, hand, chosen_card, played_cards, score, puddings",
         )
-        .eq("room_id", roomId);
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: true });
       if (!dbPlayers) return;
 
       for (const p of dbPlayers) {
@@ -130,7 +133,7 @@ export function useGame(roomId: string) {
           p.played_cards = [...(p.played_cards || []), p.chosen_card];
       }
 
-      const isHandEmpty = dbPlayers[0].hand.length === 0;
+      const isHandEmpty = dbPlayers.every((p) => p.hand.length === 0);
 
       if (isHandEmpty) {
         const updates = calculateRoundScores(dbPlayers);
@@ -263,6 +266,12 @@ export function useGame(roomId: string) {
             ...prev,
             [payload.new.id]: payload.new.has_picked,
           }));
+          if (payload.new.cards_left !== undefined) {
+            setCardCounts((prev) => ({
+              ...prev,
+              [payload.new.id]: payload.new.cards_left,
+            }));
+          }
         },
       )
       .subscribe();
