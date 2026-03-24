@@ -105,29 +105,27 @@ export function Lobby() {
         },
         (payload) => {
           setPlayers((current) => {
-            const sobreviventes = current.filter(
+            const remainingPlayers = current.filter(
               (p) => p.id !== payload.old.id,
             );
-            const jogadorDeletado = current.find(
-              (p) => p.id === payload.old.id,
-            );
+            const deletedPlayer = current.find((p) => p.id === payload.old.id);
 
-            if (jogadorDeletado?.is_host && sobreviventes.length > 0) {
-              const maisAntigo = [...sobreviventes].sort(
+            if (deletedPlayer?.is_host && remainingPlayers.length > 0) {
+              const olderPlayer = [...remainingPlayers].sort(
                 (a, b) =>
                   new Date(a.created_at).getTime() -
                   new Date(b.created_at).getTime(),
               )[0];
 
-              if (maisAntigo.id === myPlayerIdRef.current) {
+              if (olderPlayer.id === myPlayerIdRef.current) {
                 supabase
                   .from("players")
                   .update({ is_host: true })
-                  .eq("id", maisAntigo.id)
+                  .eq("id", olderPlayer.id)
                   .then();
               }
             }
-            return sobreviventes;
+            return remainingPlayers;
           });
         },
       )
@@ -295,7 +293,7 @@ export function Lobby() {
       .eq("id", roomId);
   };
 
-  const handleVoltar = async () => {
+  const handleBack = async () => {
     if (myPlayerIdRef.current)
       await supabase.from("players").delete().eq("id", myPlayerIdRef.current);
     localStorage.removeItem("eiigo_player_id");
@@ -307,11 +305,11 @@ export function Lobby() {
 
   const me = players.find((p) => p.id === myPlayerIdRef.current);
   const myReadyState = me?.is_ready ?? false;
-  const todosProntos = players.length > 0 && players.every((p) => p.is_ready);
+  const allReady = players.length > 0 && players.every((p) => p.is_ready);
 
   return (
     <>
-      <button className="btn-back" onClick={handleVoltar}>
+      <button className="btn-back" onClick={handleBack}>
         <ArrowLeft /> SAIR
       </button>
 
@@ -382,10 +380,9 @@ export function Lobby() {
           <button
             className="btn-start"
             onClick={handleStartGame}
-            disabled={!todosProntos || players.length === 1}
+            disabled={!allReady || players.length === 1}
             style={{
-              backgroundColor:
-                !todosProntos || players.length === 1 ? "#ccc" : "",
+              backgroundColor: !allReady || players.length === 1 ? "#ccc" : "",
             }}
           >
             <Play /> INICIAR PARTIDA
