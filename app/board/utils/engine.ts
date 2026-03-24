@@ -45,6 +45,8 @@ export function renderHand(
 
     let origin = "center 200%";
     if (position === "top") origin = "center -50%";
+    if (position === "top-left") origin = "center -50%";
+    if (position === "top-right") origin = "center -50%";
     if (position === "left") origin = "-50% center";
     if (position === "right") origin = "150% center";
     cardEl.style.setProperty("--origin", origin);
