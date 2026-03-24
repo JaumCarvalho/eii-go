@@ -62,12 +62,25 @@ export function calculateRoundScores(dbPlayers: any[]): Record<string, any> {
     const firstPlaceIds = Object.keys(makiCounts).filter(
       (id) => makiCounts[id] === highest,
     );
-    const pointsEach = Math.floor(6 / firstPlaceIds.length);
-
+    const firstPointsEach = Math.floor(6 / firstPlaceIds.length);
     firstPlaceIds.forEach((id) => {
       const calc = calculations.find((c) => c.id === id);
-      if (calc) calc.roundScore += pointsEach;
+      if (calc) calc.roundScore += firstPointsEach;
     });
+
+    if (firstPlaceIds.length === 1 && makiValues.length > 1) {
+      const secondHighest = makiValues[1];
+      if (secondHighest > 0) {
+        const secondPlaceIds = Object.keys(makiCounts).filter(
+          (id) => makiCounts[id] === secondHighest,
+        );
+        const secondPointsEach = Math.floor(3 / secondPlaceIds.length);
+        secondPlaceIds.forEach((id) => {
+          const calc = calculations.find((c) => c.id === id);
+          if (calc) calc.roundScore += secondPointsEach;
+        });
+      }
+    }
   }
 
   const finalUpdates: Record<string, any> = {};
