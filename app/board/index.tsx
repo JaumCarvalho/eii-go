@@ -28,6 +28,15 @@ export function Board() {
       <Scoreboard {...gameState} />
 
       <main className="tabletop">
+        {gameState.timeLeft > 0 && (
+          <div
+            className="center-countdown"
+            data-urgent={gameState.timeLeft <= 3 ? "true" : "false"}
+          >
+            <span>{gameState.timeLeft}</span>
+          </div>
+        )}
+
         {gameState.occupiedSeats.map((seat) => (
           <PlayerSpot
             key={seat.player.id}
