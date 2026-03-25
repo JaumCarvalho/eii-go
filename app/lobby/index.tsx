@@ -171,6 +171,11 @@ export function Lobby() {
           myPlayerIdRef.current = data.id;
           localStorage.setItem("eiigo_player_id", data.id);
         }
+      } else {
+        await supabase
+          .from("players")
+          .update({ is_ready: isHost })
+          .eq("id", validPlayerId);
       }
 
       const { data: allPlayers } = await supabase
