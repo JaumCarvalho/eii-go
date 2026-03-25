@@ -79,16 +79,6 @@ export function Results() {
         .from("rooms")
         .update({ status: "waiting", current_turn: null })
         .eq("id", roomId);
-      await supabase
-        .from("players")
-        .update({ is_ready: false })
-        .eq("room_id", roomId);
-      await supabase.from("players").update({ is_ready: true }).eq("id", meuId);
-    } else {
-      await supabase
-        .from("players")
-        .update({ is_ready: false })
-        .eq("id", meuId);
     }
 
     navigate(`/lobby/${roomId}`);
