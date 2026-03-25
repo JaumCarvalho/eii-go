@@ -576,6 +576,46 @@ body {
   z-index: 100 !important;
 }
 
+.main-player .board-card.staged {
+  transform: translate(var(--x, 0px), -55px) scale(1.1) rotate(0deg) !important;
+  z-index: 101 !important;
+  border-color: var(--wasabi-green) !important;
+  box-shadow:
+    0 0 0 3px var(--wasabi-green),
+    3px 6px 0 var(--border-color) !important;
+}
+
+.main-player .board-card.staged:hover {
+  transform: translate(var(--x, 0px), -65px) scale(1.15) rotate(0deg) !important;
+}
+
+.center-countdown {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  width: 80px;
+  height: 80px;
+  background-color: var(--tamago-yellow);
+  border: 4px solid var(--border-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-logo);
+  font-size: 2.5rem;
+  font-weight: 700;
+  box-shadow: 4px 6px 0 var(--border-color);
+  pointer-events: none;
+  transition: background-color 0.3s ease;
+}
+
+.center-countdown[data-urgent="true"] {
+  background-color: var(--salmon-pink);
+  animation: pulseTurn 0.8s infinite;
+}
+
 .main-player .board-card::after {
   content: "";
   position: absolute;
