@@ -29,6 +29,12 @@ export function useGame(roomId: string) {
 
   const hostLock = useRef(false);
 
+  const [timeLeft, setTimeLeft] = useState(10);
+  const timeLeftRef = useRef(10);
+  const stagedCardIdRef = useRef<string | null>(null);
+  const hasCommitted = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     myHandRef.current = myHand;
   }, [myHand]);
@@ -281,6 +287,7 @@ export function useGame(roomId: string) {
     });
     gameChannel
       .on("broadcast", { event: "reveal_and_pass" }, () => {
+        localStorage.setItem(`eiigo_turn_start_${roomId}`, String(Date.now()));
         setIsLoaded(false);
         engineStarted.current = false;
         setReloadBoard((prev) => prev + 1);
@@ -289,27 +296,27 @@ export function useGame(roomId: string) {
 
     const myHandEl = document.getElementById(`hand-${myId}`);
 
-    const handleCardClick = async (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const cardEl = target.closest(".board-card") as HTMLElement;
+    stagedCardIdRef.current = null;
+    hasCommitted.current = false;
+    timeLeftRef.current = 10;
+    setTimeLeft(10);
 
-      if (!cardEl || pickStatusRef.current[myId]) return;
+    const commitSelection = async () => {
+      if (hasCommitted.current) return;
+      hasCommitted.current = true;
 
-      pickStatusRef.current[myId] = true;
+      const hand = myHandRef.current;
+      const randomCard = hand[Math.floor(Math.random() * hand.length)];
+      const cardId = stagedCardIdRef.current ?? randomCard?.id ?? null;
+      if (!cardId) return;
 
-      const clickedCardId = cardEl.dataset.cardId;
-      const chosenCard = myHandRef.current.find((c) => c.id === clickedCardId);
+      const chosenCard = myHandRef.current.find((c) => c.id === cardId);
+      if (!chosenCard) return;
 
-      if (!chosenCard) {
-        pickStatusRef.current[myId] = false;
-        return;
-      }
-
-      cardEl.style.transform = `translateY(-30px)`;
-      cardEl.style.opacity = "0.5";
-
-      const newHand = myHandRef.current.filter((c) => c.id !== clickedCardId);
+      const newHand = myHandRef.current.filter((c) => c.id !== cardId);
+      myHandRef.current = newHand;
       setMyHand(newHand);
+      pickStatusRef.current = { ...pickStatusRef.current, [myId]: true };
       setPickStatus((prev) => ({ ...prev, [myId]: true }));
 
       await supabase
@@ -318,9 +325,44 @@ export function useGame(roomId: string) {
         .eq("id", myId);
     };
 
+    timerRef.current = setInterval(() => {
+      timeLeftRef.current -= 1;
+      setTimeLeft(timeLeftRef.current);
+      if (timeLeftRef.current <= 0) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        commitSelection();
+      }
+    }, 1000);
+
+    const handleCardClick = (event: MouseEvent) => {
+      if (hasCommitted.current || timeLeftRef.current <= 0) return;
+
+      const target = event.target as HTMLElement;
+      const cardEl = target.closest(".board-card") as HTMLElement;
+      if (!cardEl) return;
+
+      const clickedCardId = cardEl.dataset.cardId;
+      if (!clickedCardId) return;
+
+      if (stagedCardIdRef.current === clickedCardId) {
+        cardEl.classList.remove("staged");
+        stagedCardIdRef.current = null;
+      } else {
+        if (stagedCardIdRef.current) {
+          const prevEl = document.querySelector(
+            `[data-card-id="${stagedCardIdRef.current}"]`,
+          ) as HTMLElement | null;
+          if (prevEl) prevEl.classList.remove("staged");
+        }
+        cardEl.classList.add("staged");
+        stagedCardIdRef.current = clickedCardId;
+      }
+    };
+
     if (myHandEl) myHandEl.addEventListener("click", handleCardClick);
 
     return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
       if (myHandEl) myHandEl.removeEventListener("click", handleCardClick);
       supabase.removeChannel(gameChannel);
       supabase.removeChannel(roomChannel);
@@ -339,5 +381,6 @@ export function useGame(roomId: string) {
     occupiedSeats,
     cardCounts,
     tableCards,
+    timeLeft,
   };
 }
